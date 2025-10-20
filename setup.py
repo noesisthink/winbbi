@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 # 定义打包配置
 setup(
     name="winbbi",  # PyPI 库名（必须唯一，已改为 winbbi）
-    version="0.1.0",
+    version="0.1.1",
     author="lihua",
     author_email="3209414882@qq.com",
     description="Windows 平台高性能 BigWig 文件读取库（基于 Go 实现，支持原始信号和缩放信号）",
