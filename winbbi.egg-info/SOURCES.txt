@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+winbbi/__init__.py
+winbbi/_binding.py
+winbbi.egg-info/PKG-INFO
+winbbi.egg-info/SOURCES.txt
+winbbi.egg-info/dependency_links.txt
+winbbi.egg-info/top_level.txt
+winbbi/lib/windows/amd64/winbbi.dll

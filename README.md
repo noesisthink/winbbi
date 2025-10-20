@@ -1,2 +1,239 @@
-# winbbi
-High-performance BigWig file reader for Windows, implemented in Go. Focused on bioinformatics data analysis (e.g., ChIP-seq, ATAC-seq data) with support for raw signal and zoomed signal reading.
+# winbbi 🚀 | High-Performance BigWig Reader for Windows
+
+> A blazingly fast BigWig file parser tailored for Windows, built with Go for bioinformatics workflows—empowering ChIP-seq, ATAC-seq, and genomic data analysis with zero friction! 🧬
+
+Designed specifically for bioinformatics researchers and developers working on Windows, `winbbi` delivers high-speed access to raw and zoomed signals from BigWig files. With Go-powered performance, native Windows optimization, and zero external dependencies, it’s the ultimate tool for handling large-scale genomic datasets (even GB-sized files) with minimal setup.
+
+---
+
+## 🌟 Core Features
+- 🚀 **Blazing Fast**: Go-under-the-hood acceleration outperforms pure Python libraries—process GB-sized BigWig files in seconds, not minutes!
+- 🪟 **Windows-Native**: Optimized for 64-bit Windows 10/11 with built-in DLLs—no extra compilers, dependencies, or system tweaks required.
+- 📊 **Sparse Storage Aware**: Natively adapts to BigWig’s sparse format, returning only valid signal intervals to save memory and speed up computations.
+- 🎯 **Flexible Zooming**: Customize bin count and reduction ratio for visualization-ready signals—perfect for plotting, downstream analysis, or rapid data exploration.
+- 📦 **Zero Dependencies**: Install with a single `pip` command—no `numpy`, `pandas`, or external tools needed (works with pure Python 3.7+).
+- 🌐 **Unicode Path Support**: Seamlessly handle file paths with Chinese, special characters, or spaces—no more encoding headaches!
+- 🛡️ **Memory-Safe**: Automatic C memory management and file handle cleanup (via `with` statements or destructors)—avoid leaks and crashes.
+
+---
+
+## 📦 Installation
+Get started in 10 seconds with `pip`—no complex setup, no build steps!
+```bash
+pip install winbbi
+```
+
+> ✨ **Pro Tip**: Use Python 3.7+ (64-bit) for full compatibility. Works with conda environments too!
+
+---
+
+## 🚀 Quick Start
+### Basic Usage (Recommended: `with` Statement for Auto-Cleanup)
+```python
+import winbbi
+
+# Initialize reader + auto-close file (best practice)
+with winbbi.BigWigReader() as reader:
+    # 1. Open a BigWig file (supports absolute/relative/Unicode paths)
+    reader.open(r"D:\BioData\RAD21_ENCFF000WCT.bigWig")
+    
+    # 2. Fetch file metadata (version, signal stats, coverage)
+    metadata = reader.get_metadata()
+    print("=== File Metadata ===")
+    for key, value in metadata.items():
+        print(f"{key}: {value}")
+    
+    # 3. Read raw signal (case-sensitive chromosome name!)
+    raw_signal = reader.read_raw_signal(chrom="chr1", start=1000000, end=1001000)
+    print(f"\n=== Raw Signal (chr1:1000000-1001000) ===")
+    print(f"Signal length: {len(raw_signal)}")
+    print(f"First 5 values: {raw_signal[:5] if raw_signal else 'No signal in interval'}")
+    
+    # 4. Read zoomed signal (100 bins for smooth visualization)
+    zoom_signal = reader.read_zoom_signal(
+        chrom="chr1",
+        start=100000,
+        end=200000,
+        num_bins=100,          # Output resolution
+        use_closest=True,      # Pick nearest zoom level
+        desired_reduction=100  # Target compression ratio
+    )
+    print(f"\n=== Zoomed Signal (chr1:100000-200000, 100 bins) ===")
+    print(f"Signal length: {len(zoom_signal)}")
+    print(f"First 5 values: {zoom_signal[:5]}")
+```
+
+### Standard Usage (Manual Resource Management)
+```python
+import winbbi
+
+reader = winbbi.BigWigReader()
+try:
+    reader.open("experiment_data.bw")
+    signal = reader.read_raw_signal(chrom="chr2", start=500000, end=501000)
+    print(f"Raw signal (first 10 values): {signal[:10]}")
+finally:
+    reader.close()  # Critical: Release resources!
+```
+
+---
+
+## 📚 Complete API Documentation
+### 1. `winbbi.BigWigReader()`
+- **Purpose**: Initialize the reader and load the built-in `winbbi.dll`
+- **Exceptions**:
+  - `OSError`: Non-Windows OS or 32-bit Windows (64-bit required)
+  - `FileNotFoundError`: Missing `winbbi.dll` (reinstall the package)
+  - `RuntimeError`: Failed to load DLL (missing MinGW’s `libgcc_s_seh-1.dll`—see Troubleshooting)
+
+### 2. `open(bw_file_path: str)`
+- **Purpose**: Open a BigWig file
+- **Parameters**: `bw_file_path` → Absolute/relative path (supports Unicode)
+- **Exceptions**:
+  - `FileNotFoundError`: File does not exist
+  - `RuntimeError`: Another file is open or invalid BigWig format
+
+### 3. `close()`
+- **Purpose**: Close the file and release handles/memory
+- **Note**: Always call explicitly (or use `with` statements) to avoid leaks
+
+### 4. `get_metadata() -> dict`
+- **Purpose**: Retrieve core file statistics
+- **Returns**:
+  | Field Name          | Description                                  | Type       |
+  |---------------------|----------------------------------------------|------------|
+  | Version             | BigWig format version                        | `uint16`   |
+  | Number of Zoom Levels | Built-in zoom levels count                  | `uint16`   |
+  | Bases Covered       | Total bases with signal                      | `uint64`   |
+  | Minimum Value       | Global minimum signal intensity              | `float64`  |
+  | Maximum Value       | Global maximum signal intensity              | `float64`  |
+  | Sum of Data         | Sum of all signal values                     | `float64`  |
+  | Sum of Squares      | Sum of squared signal values                 | `float64`  |
+  | Buffer Size         | File read buffer size (bytes)                | `uint32`   |
+
+### 5. `read_raw_signal(chrom: str, start: int, end: int) -> list[float]`
+- **Purpose**: Read unmodified raw signal from a genomic interval
+- **Parameters**:
+  - `chrom`: Case-sensitive chromosome name (e.g., "chr1", not "Chr1")
+  - `start`: Start position (≥0; genomic data typically starts at 1)
+  - `end`: End position (> start)
+- **Returns**: Raw signal values (empty list if no signal in the interval)
+
+### 6. `read_zoom_signal(chrom: str, start: int, end: int, num_bins=100, use_closest=True, desired_reduction=100) -> list[float]`
+- **Purpose**: Read zoomed/compressed signal (NaN → 0 automatically)
+- **Parameters**:
+  - `num_bins`: Output resolution (number of bins, ≥1)
+  - `use_closest`: Use the nearest precomputed zoom level (faster)
+  - `desired_reduction`: Target compression ratio (≥1)
+- **Returns**: Zoomed signal (length = `num_bins`; all zeros if no data)
+
+---
+
+## 🎯 Advanced Examples
+### Example 1: Batch Process Multiple Intervals
+```python
+import winbbi
+
+# List of genomic regions to analyze
+regions = [
+    ("chr1", 1000000, 1001000),
+    ("chr1", 2000000, 2001000),
+    ("chr2", 500000, 501000)
+]
+
+with winbbi.BigWigReader() as reader:
+    reader.open("dataset.bw")
+    for chrom, start, end in regions:
+        signal = reader.read_raw_signal(chrom, start, end)
+        print(f"\n📌 {chrom}:{start}-{end}")
+        print(f"Signal length: {len(signal)}")
+        if signal:
+            print(f"Mean: {sum(signal)/len(signal):.4f} | Min: {min(signal):.2f} | Max: {max(signal):.2f}")
+```
+
+### Example 2: Visualize Signals with Matplotlib
+```python
+import winbbi
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.style.use("seaborn-v0_8-darkgrid")
+
+with winbbi.BigWigReader() as reader:
+    reader.open(r"D:\BioData\RAD21_ENCFF000WCT.bigWig")
+    
+    # Read zoomed signal (200 bins for smooth plotting)
+    chrom, start, end = "chr1", 500000, 1500000
+    zoom_signal = reader.read_zoom_signal(chrom, start, end, num_bins=200)
+    
+    # Create x-axis (genomic positions)
+    x_pos = np.linspace(start, end, len(zoom_signal))
+    
+    # Plot
+    plt.figure(figsize=(14, 5))
+    plt.plot(x_pos, zoom_signal, color="#FF6B6B", linewidth=2, alpha=0.8)
+    plt.title(f"📊 Zoomed Signal - {chrom}:{start}-{end}", fontsize=16, pad=20)
+    plt.xlabel("Genomic Position (bp)", fontsize=12)
+    plt.ylabel("Signal Intensity", fontsize=12)
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig("signal_plot.png", dpi=300, bbox_inches="tight")
+    plt.show()
+```
+
+### Example 3: Filter Signals Above a Threshold
+```python
+import winbbi
+
+THRESHOLD = 10.0  # Keep signals above this intensity
+
+with winbbi.BigWigReader() as reader:
+    reader.open("dataset.bw")
+    raw_signal = reader.read_raw_signal(chrom="chr3", start=800000, end=805000)
+    
+    # Filter high-confidence signals
+    filtered_signal = [val for val in raw_signal if val > THRESHOLD]
+    
+    print(f"Original signal length: {len(raw_signal)}")
+    print(f"Filtered signal length (values > {THRESHOLD}): {len(filtered_signal)}")
+    if filtered_signal:
+        print(f"Filtered stats → Min: {min(filtered_signal):.2f} | Max: {max(filtered_signal):.2f}")
+```
+
+---
+
+## 🚨 Troubleshooting
+### Common Issues & Fixes
+| Problem                                  | Cause                                      | Solution                                                                 |
+|------------------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
+| "Failed to load winbbi.dll"              | Missing MinGW dependency `libgcc_s_seh-1.dll` | 1. Install 64-bit MinGW → Add `bin` to system `PATH`; 2. Copy `libgcc_s_seh-1.dll` to your script directory |
+| Empty raw signal list                    | No signal in the specified interval         | Verify chromosome name case + position range; Try a different region    |
+| "File not found" with Unicode paths      | Outdated Python or incorrect path formatting | Use Python 3.7+; Use raw strings (e.g., `r"C:\中文路径\file.bw"`)       |
+| Case-sensitive chromosome names          | BigWig stores names as-is (e.g., "chr1" ≠ "1") | Use exact names from your BigWig (verify with UCSC Genome Browser)       |
+
+---
+
+## ⚙️ System Requirements
+- **OS**: 64-bit Windows 10 / Windows 11
+- **Python**: 3.7+ (64-bit)
+- **Disk Space**: ≥10MB (package + built-in DLL)
+- **RAM**: Minimal (depends on dataset size—works with 4GB+ RAM)
+
+---
+
+## 📄 License
+MIT License © 2025 [noesisthink](https://github.com/noesisthink)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## 🌟 Contribute
+Found a bug? Have a feature request? Want to optimize performance?  
+Feel free to open an issue or submit a pull request on [GitHub](https://github.com/noesisthink/winbbi)!  
+
+Let’s make genomic data analysis on Windows faster and easier—together! 🤝
