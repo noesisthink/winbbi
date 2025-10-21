@@ -1,6 +1,7 @@
-# winbbi 🚀 | High-Performance BigWig Reader for Windows
+# winbbi 🚀 | blazingly fast BigWig for Windows-Python Native Go parser + cgo → CPython bindings. Zero friction for genomic workflows.
 
-> A blazingly fast BigWig file parser tailored for Windows, built with Go for bioinformatics workflows—empowering ChIP-seq, ATAC-seq, and genomic data analysis with zero friction! 🧬
+
+> A blazingly fast BigWig parser tailored for Windows Python environments. Implemented in Go with cgo → CPython C-API bindings to deliver native .pyd extensions — ideal for ChIP-seq, ATAC-seq and genomic data pipelines. 🧬
 
 Designed specifically for bioinformatics researchers and developers working on Windows, `winbbi` delivers high-speed access to raw and zoomed signals from BigWig files. With Go-powered performance, native Windows optimization, and zero external dependencies, it’s the ultimate tool for handling large-scale genomic datasets (even GB-sized files) with minimal setup.
 
@@ -235,5 +236,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## 🌟 Contribute
 Found a bug? Have a feature request? Want to optimize performance?  
 Feel free to open an issue or submit a pull request on [GitHub](https://github.com/noesisthink/winbbi)!  
+
 
 Let’s make genomic data analysis on Windows faster and easier—together! 🤝
