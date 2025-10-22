@@ -207,7 +207,6 @@ with winbbi.BigWigReader() as reader:
 ### Common Issues & Fixes
 | Problem                                  | Cause                                      | Solution                                                                 |
 |------------------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
-| "Failed to load winbbi.dll"              | Missing MinGW dependency `libgcc_s_seh-1.dll` | 1. Install 64-bit MinGW → Add `bin` to system `PATH`; 2. Copy `libgcc_s_seh-1.dll` to your script directory |
 | Empty raw signal list                    | No signal in the specified interval         | Verify chromosome name case + position range; Try a different region    |
 | "File not found" with Unicode paths      | Outdated Python or incorrect path formatting | Use Python 3.7+; Use raw strings (e.g., `r"C:\中文路径\file.bw"`)       |
 | Case-sensitive chromosome names          | BigWig stores names as-is (e.g., "chr1" ≠ "1") | Use exact names from your BigWig (verify with UCSC Genome Browser)       |
@@ -239,4 +238,5 @@ Feel free to open an issue or submit a pull request on [GitHub](https://github.c
 
 
 Let’s make genomic data analysis on Windows faster and easier—together! 🤝
+
 
